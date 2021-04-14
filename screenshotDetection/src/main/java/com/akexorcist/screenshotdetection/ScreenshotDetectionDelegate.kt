@@ -2,7 +2,6 @@ package com.akexorcist.screenshotdetection
 
 import android.Manifest
 import android.app.Activity
-import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.ContentObserver
@@ -11,21 +10,12 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import androidx.core.content.ContentResolverCompat
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.*
 
@@ -59,6 +49,8 @@ class ScreenshotDetectionDelegate(
         }
     )
 
+    @Suppress("DEPRECATION")
+    private val contentType = MediaStore.Images.Media.DATA
     var job: Job? = null
 
     @FlowPreview
@@ -83,8 +75,8 @@ class ScreenshotDetectionDelegate(
     fun createContentObserverFlow() = channelFlow<Uri> {
         val contentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean, uri: Uri?) {
-                uri?.let { _ ->
-                    offer(uri)
+                uri?.let {
+                    offer(it)
                 }
             }
         }
@@ -122,26 +114,20 @@ class ScreenshotDetectionDelegate(
         listener.onScreenCapturedWithDeniedPermission()
     }
 
-    private fun isScreenshotPath(path: String?): Boolean {
-        return path != null && path.toLowerCase(Locale.getDefault()).contains("screenshot")
+    private fun isScreenshotPath(path: String): Boolean {
+        return path.toLowerCase(Locale.getDefault()).contains("screenshot")
     }
 
     private fun getFilePathFromContentResolver(context: Context, uri: Uri): String? {
         try {
             context.contentResolver.query(
-                uri,
-                arrayOf(
-                    MediaStore.Images.Media.DISPLAY_NAME,
-                    MediaStore.Images.Media.DATA
-                ),
+                uri, arrayOf(contentType),
                 null,
                 null,
                 null
-            )?.let { cursor ->
+            )?.use { cursor ->
                 cursor.moveToFirst()
-                val path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
-                cursor.close()
-                return path
+                return cursor.getString(0)
             }
         } catch (e: IllegalStateException) {
             Log.w(TAG, e.message ?: "")
