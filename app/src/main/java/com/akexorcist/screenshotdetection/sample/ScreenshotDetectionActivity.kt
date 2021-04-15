@@ -9,7 +9,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.akexorcist.screenshotdetection.ScreenshotDetectionDelegate
 
-open class ScreenshotDetectionActivity : AppCompatActivity(), ScreenshotDetectionDelegate.ScreenshotDetectionListener {
+abstract class ScreenshotDetectionActivity : AppCompatActivity(), ScreenshotDetectionDelegate.ScreenshotDetectionListener {
     companion object {
         private const val REQUEST_CODE_READ_EXTERNAL_STORAGE_PERMISSION = 3009
     }
@@ -40,14 +40,6 @@ open class ScreenshotDetectionActivity : AppCompatActivity(), ScreenshotDetectio
             }
             else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
-    }
-
-    override fun onScreenCaptured(path: String) {
-        // Do something when screen was captured
-    }
-
-    override fun onScreenCapturedWithDeniedPermission() {
-        // Do something when screen was captured but read external storage permission has denied
     }
 
     private fun checkReadExternalStoragePermission() {
